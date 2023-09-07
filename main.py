@@ -30,7 +30,7 @@ from parameters.args import get_args
 from parameters.utils import get_experiment_name
 
 
-from sappo_fcn.static_user import run_static_user
+from sappo_fcn.fix_num_user import run_mobile_fix_num_user
 
 
 def main(args):
@@ -41,7 +41,7 @@ def main(args):
     args.experiment_name = get_experiment_name(args)
     run_dir = Path(os.path.split(os.path.dirname(os.path.abspath(__file__)))[
                        0] + "/logs") / args.algorithm_name / args.experiment_name
-
+    print(run_dir)
     writer = SummaryWriter(log_dir=run_dir)
     if not os.path.exists(run_dir):
         os.makedirs(run_dir)
@@ -53,7 +53,7 @@ def main(args):
     args.n_agents = args.num_node
     episode_length = args.episode_length
 
-    run_static_user(data, run_dir, args)
+    run_mobile_fix_num_user(data, run_dir, args)
 
 
 

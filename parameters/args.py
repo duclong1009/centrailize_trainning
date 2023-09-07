@@ -10,7 +10,7 @@ def get_args():
     # ippo = MARL-IL
     # ppo = SARL
     # MARL-CTDE-shared = [--algorithm_name=mappo] + [--runner==shared]
-    parser.add_argument('--algorithm_name', type=str, help='alg', default='mappo', choices=['mappo', 'ippo', 'ppo'])
+    parser.add_argument('--algorithm_name', type=str, help='alg', default='ppo', choices=['mappo', 'ippo', 'ppo'])
 
     # mobile: experiment with mobile users but fixed number of users
     # dyn_mobile: mobile users with dynamic number of users
@@ -169,7 +169,7 @@ def get_args():
     # parameter for dataset
     parser.add_argument('--seed', type=int, default=1)
 
-    parser.add_argument('--obs_state', type=int, default=3,
+    parser.add_argument('--obs_state', type=int, default=5,
                         help='State setting, (default 0)')
     parser.add_argument('--action_state', type=int, default=0, choices=[0, 1],
                         help='State setting, (default 0)')
