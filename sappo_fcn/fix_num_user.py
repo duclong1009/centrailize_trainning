@@ -226,6 +226,7 @@ def run_mobile_fix_num_user(data, run_dir, args):
 
     # ------------------------------------- init location ap/user  -------------------------------------
     args.data = data
+    # breakpoint()
     episode_length = args.episode_length
 
     if not args.test:

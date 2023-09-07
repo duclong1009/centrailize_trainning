@@ -12,35 +12,12 @@ def get_args():
     # MARL-CTDE-shared = [--algorithm_name=mappo] + [--runner==shared]
     parser.add_argument('--algorithm_name', type=str, help='alg', default='ppo', choices=['mappo', 'ippo', 'ppo'])
 
-    # mobile: experiment with mobile users but fixed number of users
-    # dyn_mobile: mobile users with dynamic number of users
-    # dyn_mobile_fix_train: Section 4 in the report, train with fixed number of user but test on dynamic number of users
-    parser.add_argument("--scenario_name", type=str, default="mobile", choices=['mobile', 'static', 'dyn_mobile',
-                                                                                'dyn_mobile_fix_train'],
-                        help="an identifier to distinguish different experiment.")
-    # number of generated scenarios (=200 in the experiments)
-    parser.add_argument("--num_scenario", type=int, default=100,
-                        help="number of mobile scenarios.")
     parser.add_argument('--min_rate', type=float, help='minimum rate requirement', default=8)
-    parser.add_argument('--M', type=int, help='M: number of antenna', default=100)
-    parser.add_argument('--K', type=int, help='K: number of users (agents)', default=50)
-    parser.add_argument('--max_K', type=int, help='K: number of users (agents)', default=100)
-
-    parser.add_argument('--D', type=float, help='D: size of the area', default=0.1)
-    parser.add_argument('--bs_dist', type=str, help='Base station location type',
-                        default='random', choices=['grid', 'random'])
-    parser.add_argument('--sigma_shd', type=float, help='sigma_shd in dB', default=8)
-    parser.add_argument('--trtau', type=int, help='trtau', default=10)
-    parser.add_argument('--Lbeta', type=float, help='top largest beta', default=0.2)
-
-    parser.add_argument('--total_step', type=int, help='total number of generated data (location of users)',
-                        default=100)
+   
     parser.add_argument('--train_size', type=float, help='number of data sample for training',
                         default=0.7)
-    parser.add_argument('--max_veloc', type=float, help='number of data sample for training',
-                        default=40)
-    parser.add_argument('--schedule_time', type=float, help='scheduling time, if <= 0 --> using coherence time',
-                        default=0.1)
+
+    parser.add_argument('--K', type=int, default=1)
 
     # training parameter
     parser.add_argument("--n_training_threads", type=int,
@@ -169,7 +146,7 @@ def get_args():
     # parameter for dataset
     parser.add_argument('--seed', type=int, default=1)
 
-    parser.add_argument('--obs_state', type=int, default=5,
+    parser.add_argument('--obs_state', type=int, default=2,
                         help='State setting, (default 0)')
     parser.add_argument('--action_state', type=int, default=0, choices=[0, 1],
                         help='State setting, (default 0)')
@@ -198,64 +175,64 @@ def get_args():
     parser.add_argument('--n_sr', type=int, default=2, choices=[2, 3],
                         help='n-segment path, (default 2)')
     parser.add_argument('--n_path', type=int, default=3)
+    
     args = parser.parse_args()
     checking_parameter(args)
 
-    if args.bs_dist == 'grid':
-        n = int(sqrt(args.M))
-        args.M = n ** 2
 
-    if args.obs_state <= 3:
-        args.Lbeta = 1.0
-
-    if args.train_size > 0.7:
-        args.train_size = 0.7
-
-    args.test_size = 1.0 - args.train_size
-    train_size = int(args.num_scenario * args.train_size)
-    test_size = int(args.num_scenario * args.test_size)  # always test with last 30%
-
-    n_rollout_threads = find_closest_divisor(train_size, target=args.n_rollout_threads)
-    args.n_rollout_threads = n_rollout_threads
-
-    if 'dyn_mobile' in args.scenario_name:
-        min_scenario_per_case = args.min_scenario_per_case
-        args.num_user_case = int(test_size/min_scenario_per_case)
-
-        num_scenario_per_case = int(args.num_scenario / args.num_user_case)
-        n_rollout_threads = find_closest_divisor(num_scenario_per_case, target=args.n_rollout_threads)
-        args.n_rollout_threads = n_rollout_threads
-
-        args.n_eval_rollout_threads = args.n_rollout_threads
-        n_rollout_threads = find_closest_divisor(num_scenario_per_case, target=args.n_eval_rollout_threads)
-        args.n_eval_rollout_threads = n_rollout_threads
-
-    else:
-        if args.algorithm_name == 'mappo' or args.algorithm_name == 'ippo':
-            n_rollout_threads = find_closest_divisor(train_size, target=args.n_rollout_threads)
-            args.n_rollout_threads = n_rollout_threads
-
-            args.n_eval_rollout_threads = args.n_rollout_threads
-            n_rollout_threads = find_closest_divisor(test_size, target=args.n_eval_rollout_threads)
-            args.n_eval_rollout_threads = n_rollout_threads
-        else:
-            n_rollout_threads = find_closest_divisor(train_size, target=args.n_rollout_threads)
-            args.n_rollout_threads = n_rollout_threads
-
-            args.n_eval_rollout_threads = 1
+    
 
     print(f'nvev: {args.n_rollout_threads}')
     print(f'nvev_eval: {args.n_eval_rollout_threads}')
 
-    if args.scenario_name == 'mobile':
-        episode_length = int(
-            args.num_scenario * args.train_size * args.total_step / args.n_rollout_threads)
+    if 'abilene' in args.dataset:
+        args.num_node = 12
+        args.num_flow = args.num_node * args.num_node
+        args.day_size = 288
+    elif 'geant' in args.dataset:
+        args.num_node = 22
+        args.num_flow = args.num_node * args.num_node
+        args.day_size = 96
+    elif 'sdn' in args.dataset:
+        args.num_node = 14
+        args.num_flow = args.num_node * args.num_node
+        args.day_size = 1440
+    elif 'nobel' in args.dataset:
+        args.num_node = 17
+        args.num_flow = args.num_node * args.num_node
+        args.day_size = 288
+        args.train_size = 1.0
+    elif 'germany' in args.dataset:
+        args.num_node = 50
+        args.num_flow = args.num_node * args.num_node
+        args.day_size = 288
+        args.train_size = 1.0
+    elif 'gnnet-75' in args.dataset:
+        args.num_node = 75
+        args.num_flow = args.num_node * args.num_node
+        args.day_size = 288
+        args.train_size = 1.0
+    elif 'gnnet-100' in args.dataset:
+        args.num_node = 100
+        args.num_flow = args.num_node * args.num_node
+        args.day_size = 288
+        args.train_size = 1.0
+    elif 'gnnet-40' in args.dataset:
+        args.num_node = 40
+        args.num_flow = args.num_node * args.num_node
+        args.day_size = 288
+        args.train_size = 1.0
+    elif 'ct-gen' in args.dataset:
+        args.num_node = 149
+        args.num_flow = args.num_node * args.num_node
+        args.day_size = 288
+        args.train_size = 1.0
     else:
-        episode_length = int(
-            args.num_scenario * args.train_size / args.n_rollout_threads)
+        raise ValueError('Dataset not found!')
 
-    args.episode_length = episode_length
-    print(f'episode_length: {args.episode_length}')
+
+
+   
 
     return args
 
@@ -266,9 +243,6 @@ def checking_parameter(args):
 
     if args.algorithm_name == 'ippo' and args.global_state != 0:
         raise ValueError('ippo only accepts global_state = 0')
-
-    if 'dyn_mobile' in args.scenario_name and args.runner == 'separated':
-        raise ValueError(f'{args.scenario_name} only works with shared runner or federated runner')
 
     if args.test:
         args.restore = True

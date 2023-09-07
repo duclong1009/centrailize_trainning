@@ -1,1 +1,1 @@
-python main.py --dataset geant --n_rollout_threads 10 --episode_length 100
+python main.py --dataset geant --n_rollout_threads 10 --episode_length 100 --algorithm_name ppo --gamma 0.1 --n_eval_rollout_threads 1 --train_size 1 --use_eval --n_path 5

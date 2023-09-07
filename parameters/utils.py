@@ -2,28 +2,14 @@ info_keywords = ("rewards", "mlu")
 
 
 def get_experiment_name(args):
-    if args.algorithm_name == 'mappo' or args.algorithm_name == 'ippo':
+    experiment_name =   f'{args.dataset}' \
+                           f'_{args.n_path}_gamma_{args.gamma}' \
+                           f'_global_state_{args.global_state}' \
+                           f'_obs_state_{args.obs_state}_reward_{args.reward}' \
+                           f'_value_loss_coef_{args.value_loss_coef}_entropy_coef_{args.entropy_coef}' \
+                           f'_clip_param_{args.clip_param}' \
+                           f'_n_layer_{args.layer_N}_hidden_size_{args.hidden_size}' \
+                           f'_ppo_ep_{args.ppo_epoch}'
 
-        experiment_name = f'{args.algorithm_name}-{args.dataset}-' \
-                          f'{args.global_state}-{args.obs_state}-{args.action_state}-{args.num_power_level}-' \
-                          f'{args.reward}-{args.reward_type}-' \
-                          f'{args.M}-{args.K}-{args.D}-{args.bs_dist}-{args.min_rate}-{args.Lbeta}-' \
-                          f'{args.train_size}-{args.max_veloc}-{args.use_recurrent_policy}-{args.num_scenario}-' \
-                          f'{args.total_step}'
-        if args.runner == 'shared':
-            experiment_name += f'_{args.runner}_policy'
-        if args.runner == 'federated' or 'federated' in args.runner:
-            experiment_name += f'_{args.runner}_policy'
-
-    else:
-        experiment_name = f'{args.algorithm_name}-{args.dataset}-' \
-                          f'{args.obs_state}-{args.action_state}-{args.num_power_level}-' \
-                          f'{args.reward}-' \
-                          f'{args.M}-{args.K}-{args.D}-{args.bs_dist}-{args.min_rate}-{args.Lbeta}-' \
-                          f'{args.train_size}-{args.max_veloc}-{args.num_scenario}-' \
-                          f'{args.total_step}'
-
-    experiment_name += f'_{args.weight}'
-    experiment_name += f'_{args.layer_N}'
 
     return experiment_name

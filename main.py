@@ -35,8 +35,7 @@ from sappo_fcn.fix_num_user import run_mobile_fix_num_user
 
 def main(args):
     # ------------------------------------- log dir/tensorboard  -------------------------------------
-    args.trtau = args.K  # training length
-    args.Lbeta = int(args.Lbeta * args.M)  # number of Lbeta
+
 
     args.experiment_name = get_experiment_name(args)
     run_dir = Path(os.path.split(os.path.dirname(os.path.abspath(__file__)))[
