@@ -4,9 +4,6 @@ import numpy as np
 import pulp as pl
 from pulp.apis.coin_api import PULP_CBC_CMD
 
-from .te_util import edge_in_segment, shortest_path
-
-
 class Solver:
     def __init__(self, graph, timeout, verbose):
         self.G = graph
@@ -40,7 +37,7 @@ class OneStepSRTopKSolver(Solver):
         self.n_critical_flows = 0
         self.list_link_end_at = list_link_end_at
         self.list_link_strated_at = list_link_strated_at
-        
+
     def create_problem(self, tm, allocated_link_capacity):
         """
         Create LP problem for critical flows:
@@ -80,28 +77,6 @@ class OneStepSRTopKSolver(Solver):
 
         return problem, x
 
-    # def verify_solution(self, tm, allocated_link_capacity):
-    #     mlu = 0
-    #     n_critical_flows = len(self.critical_flow_idx)
-    #     for u, v in self.G.edges:
-    #         allocated_capacity = allocated_link_capacity[u, v]
-    #         link_capacity = self.G.get_edge_data(u, v)['capacity']
-    #         load = sum(
-    #             [self.var_dict['x_{}'.format(f * self.num_node + k)] * tm[self.critical_flow_idx[f]] *
-    #              self.edge_in_segment(f, k, u, v)
-    #              for f, k in itertools.product(range(n_critical_flows), range(self.num_node))]
-    #         )
-    #         load += allocated_capacity
-    #         u = load / link_capacity
-    #         if u > mlu:
-    #             mlu = u
-
-    #     return mlu
-
-    # def edge_in_segment(self, flow_idx, k, u, v):
-    #     src, dst = self.critical_flow_idx[flow_idx]
-    #     return edge_in_segment(self.segments, src, dst, k, u, v)
-
     def extract_solution(self, problem):
 
         solution = self.init_solution()
@@ -117,20 +92,6 @@ class OneStepSRTopKSolver(Solver):
 
         return solution
 
-    # def evaluate(self, tm, solution):
-    #     # extract utilization
-    #     mlu = 0
-    #     for u, v in self.G.edges:
-    #         load = 0.0
-    #         for i, j, k in itertools.product(range(self.num_node), range(self.num_node), range(self.num_node)):
-    #             if solution[i, j, k] > 0:
-    #                 load += tm[i, j] * edge_in_segment(self.segments, i, j, k, u, v)
-
-    #         capacity = self.G.get_edge_data(u, v)['capacity']
-    #         utilization = load / capacity
-    #         if utilization >= mlu:
-    #             mlu = utilization
-    #     return mlu
 
     def init_solution(self):
         solution = np.zeros([self.num_node, self.num_node, self.num_node])

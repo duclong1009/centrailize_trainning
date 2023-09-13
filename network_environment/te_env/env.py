@@ -5,6 +5,8 @@ from .utils import *
 import numpy as np
 import copy 
 from .utils import do_routing
+from solver import OneStepSRTopKSolver
+
 class TE_Env(BaseEnv):
     def __init__(self, rank, args, is_eval=False) -> None:
         super().__init__(rank, args, is_eval)
@@ -12,6 +14,7 @@ class TE_Env(BaseEnv):
         self.current_base_solution = np.zeros(shape=(self.num_node, self.num_node))
         self.penalty = 0
         self.penalty_values = -100
+        self.solver = OneStepSRTopKSolver(self.nx_graph, 1,1, self.link_ )
 
     def reset(self, **kwargs):
         self.tm_index = self.hist_step
