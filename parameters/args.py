@@ -175,7 +175,7 @@ def get_args():
     parser.add_argument('--n_sr', type=int, default=2, choices=[2, 3],
                         help='n-segment path, (default 2)')
     parser.add_argument('--n_path', type=int, default=3)
-    
+    parser.add_argument('--selected_ratio', type=float, default=0.1)    
     args = parser.parse_args()
     checking_parameter(args)
 

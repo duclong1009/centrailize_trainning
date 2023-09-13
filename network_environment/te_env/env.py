@@ -25,18 +25,11 @@ class TE_Env(BaseEnv):
         return observation, infos
     
     def _prepare_state(self):
-        max_link_utils = 5
-        link_util = copy.deepcopy(self.link_util)
-        link_util = link_util/ max_link_utils
-        link_util = np.where(link_util > 1 , 1 , link_util)
-
         scaled_tm = self.tm_scaled[self.tm_index - self.hist_step:self.tm_index]
         original_tm = self.tm[self.tm_index - self.hist_step:self.tm_index]
 
         observation = np.zeros(self.observation_space.shape) 
         observation[: self.num_node * self.num_node] = scaled_tm.flatten()
-        observation[self.num_node * self.num_node:] = link_util
-
         return observation
     
     def _is_done(self):
@@ -78,46 +71,53 @@ class TE_Env(BaseEnv):
             observation = self._prepare_state()
         return  observation, done
 
-    def _convert_action(self, action):
-        routing_rule = np.array(action).reshape(self.num_node, self.num_node)
-        for node_id in range(self.num_node):
-            for des_id in range(self.num_node):
-                k = routing_rule[node_id, des_id]
-                if k >= self.ub[node_id, des_id]:
-                    routing_rule[node_id, des_id] = 0
-                    self.penalty += self.penalty_values
-                
-        return routing_rule
     
-    def _reward(self, mlu, path_mlu, rc=0, loss=0.0):
+    def _reward(self, mlu, action):
         """
             mlu: maximum link utilization (1,)
             mpu:  max path utilization (n_agent)
         """
-        mlu_reaward = -1.0 * mlu
-        mpu = np.max(path_mlu, axis=0)  # max paths utilization of each agent (n_agents,)
-        mpu_rewards = -1.0 * mpu
-        mpu_rewards = mpu_rewards + self.penalty
-        rewards = mlu_reaward + mpu_rewards
-       
-        return mlu_reaward
+        if sum(action) > (self.args.selected_ratio * self.num_node * (self.num_node - 1)):
+            self.penalty += self.penalty_values
 
+        mlu_reaward = -1.0 * mlu
+        rewards = mlu_reaward + self.penalty
+       
+        return rewards
+
+    def lp_solve(self,action, tm):
+        return 0.5
     
     def step(self, action, use_solution=False):
-        self.routing_rule = self._convert_action(action)
         tm = self.tm[self.tm_index]
-        mlu, self.link_util = do_routing(tm, self.routing_rule, self.nx_graph, self.num_node, self.flow2link,
-                                             self.ub)
-        self.path_mlu = get_path_mlu(self.routing_rule, self.num_node, self.flow2link, self.link_util, self.nx_graph)
-
-        rewards = self._reward(mlu=mlu, path_mlu=self.path_mlu)
-
+        mlu = self.lp_solve(action, tm)
+        self.critical_link = self._convert_action(action)
+        rewards = self._reward(mlu=mlu, action=action)
         observation, dones = self._next_obs()
         self.penalty = 0
         info = {"rewards": np.mean(rewards),
-                 "mlu": np.mean(mlu) }
+                "mlu": np.mean(mlu) }
+        print(action)
+        print(sum(action))
+
+
+        # self.routing_rule = self._convert_action(action)
+        
+        # tm = self.tm[self.tm_index]
+        # mlu, self.link_util = do_routing(tm, self.routing_rule, self.nx_graph, self.num_node, self.flow2link,
+        #                                      self.ub)
+        # self.path_mlu = get_path_mlu(self.routing_rule, self.num_node, self.flow2link, self.link_util, self.nx_graph)
+
+        # rewards = self._reward(mlu=mlu, path_mlu=self.path_mlu)
+
+        # observation, dones = self._next_obs()
+        # self.penalty = 0
+        # info = {"rewards": np.mean(rewards),
+        #          "mlu": np.mean(mlu) }
         return observation, rewards,False, dones, info
     
+    
+
     def _get_current_base_solution(self):
         solver_name = self.args.base_solution
         if solver_name == 'sp':
@@ -125,23 +125,10 @@ class TE_Env(BaseEnv):
         else:
             self.current_base_solution = self.base_solutions[solver_name][self.tm_index]
 
- 
 
-    def _update_routing_rules(self, action, routing_rule, flowID):
-        for i in range(self.n_agents):
-            for j in range(len(flowID[i])):
-                dstID = flowID[i, j]
-                if action[i, j] >= self.ub[i, dstID]:
-                    self.penalty[i] += self.penalty_values
-                    routing_rule[i, dstID] = 0
-                else:
-                    routing_rule[i, dstID] = action[i, j]
-
-                if self.is_link_fail:  # check if any link fail
-                    k = routing_rule[i, dstID]
-                    path = self.flow2link[(i, dstID)][k]
-                    if self._check_invalid_path(path) and self.ub[i, dstID] > 1:
-                        # if link_failure in paths and there is alternative path -> add penalty
-                        self.penalty[i] += self.penalty_values
-
-        return routing_rule
+    def _convert_action(self, action):
+        critical_flow = []
+        for i,act in enumerate(action):
+            if act == 1:
+                critical_flow += self.idx2flow[i]
+        return critical_flow

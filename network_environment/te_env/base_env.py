@@ -52,14 +52,14 @@ class BaseEnv(gym.Env):
         self.link2index = get_link2idex(self.nx_graph)
         self.observation_space = set_obs_space(args=self.args)
         self.action_space = set_action_space(args=self.args)
-
+        self.idx2flow = get_idx2flow(args)
         self.step_count = 0
         self.episode_count = 0
         self.scaler = self.data['scaler']
         self.link_util = np.zeros(shape=(self.num_link,))
         self.path_mlu = np.zeros(shape=(self.num_node, self.num_node))
         self.tm_index = self.hist_step
-        
+    
     def reset(self, **kwargs):
         raise("Not implement!!!")
     

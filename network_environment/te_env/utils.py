@@ -7,15 +7,27 @@ from joblib import delayed, Parallel
 import pickle 
 import time
 
+def get_idx2flow(args):
+    num_node = args.num_node
+    idx2flow = {}
+    k = 0
+    for i,j in itertools.product(range(num_node), range(num_node)):
+        if i != j:
+            idx2flow[k] = (i,j)
+            k += 1
+    return idx2flow
+
+
 def set_obs_space(args):
-    observation_space = gymnasium.spaces.Box(low=0, high=1, shape=(args.num_node * args.num_node + args.num_link,), dtype=np.float64)
+    observation_space = gymnasium.spaces.Box(low=0, high=1, shape=(args.num_node * args.num_node,), dtype=np.float64)
     return observation_space
 
 def set_action_space(args):
     num_node = args.num_node  # total number of flows per agent
     num_path = args.n_path
     num_flow = num_node * num_node
-    action_space = gymnasium.spaces.MultiDiscrete(nvec=[num_path] * num_flow)
+    n_candidate = num_node * (num_node - 1)
+    action_space = gymnasium.spaces.MultiBinary(n_candidate)
     return action_space
 
 def load_network_topology(dataset, data_folder):
