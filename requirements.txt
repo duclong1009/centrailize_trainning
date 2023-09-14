@@ -1,0 +1,11 @@
+numpy
+seaborn
+torch
+tensorboard
+scipy
+tqdm
+joblib
+gym
+gymnasium
+pulp
+stable_baselines3
