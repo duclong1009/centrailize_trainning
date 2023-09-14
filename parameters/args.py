@@ -177,7 +177,7 @@ def get_args():
     parser.add_argument('--n_path', type=int, default=3)
     parser.add_argument('--selected_ratio', type=float, default=0.1)    
     args = parser.parse_args()
-    checking_parameter(args)
+    # checking_parameter(args)
 
 
     
@@ -231,24 +231,9 @@ def get_args():
         raise ValueError('Dataset not found!')
 
 
-
-   
-
     return args
 
 
-def checking_parameter(args):
-    if args.algorithm_name != 'mappo' and args.runner == 'shared':
-        raise ValueError("Shared policy runner is only available for mappo")
-
-    if args.algorithm_name == 'ippo' and args.global_state != 0:
-        raise ValueError('ippo only accepts global_state = 0')
-
-    if args.test:
-        args.restore = True
-        args.num_scenario = args.num_scenario
-        args.episode_length = 100
-        args.ppo_epoch = 50
 
 
 def find_closest_divisor(number, target):
@@ -261,29 +246,3 @@ def find_closest_divisor(number, target):
                 min_diff = diff
                 closest_divisor = divisor
     return closest_divisor
-
-
-def update_args_dyn_user(data, num_user, num_scenario, args, is_train=False):
-    args.data = data
-    args.K = num_user
-    args.num_scenario = num_scenario
-    args.trtau = num_user  # training length
-    args.num_agent = num_user
-    if not is_train:
-        if num_scenario <= args.n_eval_rollout_threads:
-            args.n_eval_rollout_threads = num_scenario
-        n_eval_rollout_threads = find_closest_divisor(num_scenario, target=args.n_eval_rollout_threads)
-        args.n_eval_rollout_threads = n_eval_rollout_threads
-
-        round_length = num_scenario * args.total_step // args.n_rollout_threads
-        args.episode_length = round_length
-    else:
-        if num_scenario <= args.n_rollout_threads:
-            args.n_rollout_threads = num_scenario
-        n_rollout_threads = find_closest_divisor(num_scenario, target=args.n_rollout_threads)
-        args.n_rollout_threads = n_rollout_threads
-
-        round_length = num_scenario * args.total_step // args.n_rollout_threads
-        args.episode_length = round_length
-
-    return round_length

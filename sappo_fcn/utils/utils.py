@@ -14,7 +14,7 @@ def plot_results(sarl_results, uniform_results,
     plt.legend(loc='best')
     plt.xlabel('Steps')
     plt.ylabel('Rate (Mbits/s')
-    fname = 'sumrate.png'
+    fname = 'sumrate.png',
     fname = os.path.join(figures_dir, fname)
     plt.savefig(fname)
     plt.cla()

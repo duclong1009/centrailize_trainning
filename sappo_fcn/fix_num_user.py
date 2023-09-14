@@ -91,12 +91,12 @@ class TensorboardCallback(BaseCallback):
                 self.last_reward = mean_reward
                 if 'Train/Global_Reward' not in self.log_data.keys():
                     self.log_data['Train/Global_Reward'] = [mean_reward]
-                    self.log_data['Train/Sum_Rate'] = [rewards]
+                    self.log_data['Train/Rewards'] = [rewards]
                     self.log_data['Train/step'] = [self.episode_count]
                 else:
 
                     self.log_data['Train/Global_Reward'].append(mean_reward)
-                    self.log_data['Train/Sum_Rate'].append(rewards)
+                    self.log_data['Train/Rewards'].append(rewards)
                     self.log_data['Train/step'].append(self.episode_count)
 
                 self.episode_count += 1
@@ -227,8 +227,8 @@ def run_mobile_fix_num_user(data, run_dir, args):
     # ------------------------------------- init location ap/user  -------------------------------------
     args.data = data
     # breakpoint()
-    episode_length = args.episode_length
-
+    episode_length = int(args.episode_length)
+    print("episode length", episode_length)
     if not args.test:
         # env = []
         # for i in range(10):
@@ -299,32 +299,20 @@ def run_mobile_fix_num_user(data, run_dir, args):
     obs = eval_env.reset()[0]
     done = False
 
-    sum_rate, sum_power, sum_good_user, sum_reward = [], [], [], []
-    user_rate, min_rate = [], []
+    sum_mlu, sum_reward = [], []
     while not done:
         action, _states = model.predict(obs)
         obs, rewards, done, info = eval_env.step(action)
         sum_reward.append(rewards)
-        sum_rate.append(info['Rate'])
-        sum_power.append(info['Power'])
-        sum_good_user.append(info['Good_user'])
-        user_rate.append(info['User_rate'])
-        min_rate.append(info['min_rate'])
+        sum_mlu.append(info['mlu'])
 
-    sum_reward = np.asarray(sum_reward)
-    sum_rate = np.asarray(sum_rate)
-    sum_power = np.asarray(sum_power)
-    sum_good_user = np.asarray(sum_good_user)
-    user_rate = np.asarray(user_rate)
-    min_rate = np.asarray(min_rate)
+
+    sum_reward = np.asarray(sum_reward).mean()
+    sum_mlu = np.asarray(sum_mlu).mean()
 
     # saving test results
-    np.save(os.path.join(run_dir, 'Sum_rate'), sum_rate)
-    np.save(os.path.join(run_dir, 'Sum_reward'), sum_reward.mean())
-    np.save(os.path.join(run_dir, 'Sum_power'), sum_power)
-    np.save(os.path.join(run_dir, 'Sum_good_user'), sum_good_user)
-    np.save(os.path.join(run_dir, 'Min_rate'), min_rate)
+    np.save(os.path.join(run_dir, 'Sum_reward'), sum_reward)
 
-    np.save(os.path.join(run_dir, 'User_rate'), user_rate)
-    print('user rate shape:', user_rate.shape)
-    savemat(os.path.join(run_dir, 'User_rate.mat'), {'user_rate': user_rate})
+    np.save(os.path.join(run_dir, 'MLU'), sum_mlu)
+    print('MLU:', sum_mlu.shape)
+    # savemat(os.path.join(run_dir, 'User_rate.mat'), {'user_rate': user_rate})

@@ -130,7 +130,7 @@ def load_data(args):
         raise ValueError('|--- Too few matrices per threads. Reducing number of training threads')
     if int(test_size / args.n_eval_rollout_threads) < 4:
         raise ValueError('|--- Too few matrices per threads. Reducing number of eval threads')
-
+    args.episode_length = train_size / args.n_rollout_threads
     train_df, test_df = data_traffic[0:train_size], data_traffic[-test_size:]  # total dataset
 
     sc = MinMaxScaler(use_copy=True)

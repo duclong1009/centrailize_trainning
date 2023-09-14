@@ -50,7 +50,6 @@ def main(args):
     
     data = load_data(args)
     args.n_agents = args.num_node
-    episode_length = args.episode_length
 
     run_mobile_fix_num_user(data, run_dir, args)
 

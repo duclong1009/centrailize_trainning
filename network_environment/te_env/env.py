@@ -14,13 +14,16 @@ class TE_Env(BaseEnv):
         self.current_base_solution = np.zeros(shape=(self.num_node, self.num_node))
         self.penalty = 0
         self.penalty_values = -10
-        self.solver = OneStepSRTopKSolver(args,self.nx_graph, 60,False, self.list_link_strated_at, self.list_link_end_at, self.idx2flow, self.set_ENH)
-        
+
         all_flow_idx = []
         for i, j in itertools.product(range(self.num_node), range(self.num_node)):
             if i !=j:
                 all_flow_idx.append([i,j])
         self.all_flow_idx = all_flow_idx
+
+        self.solver = OneStepSRTopKSolver(args,self.nx_graph, 60,False, self.list_link_strated_at, self.list_link_end_at, self.idx2flow, self.set_ENH, self.all_flow_idx)
+        
+        
 
     def reset(self, **kwargs):
         self.tm_index = self.hist_step
@@ -87,16 +90,20 @@ class TE_Env(BaseEnv):
             mpu:  max path utilization (n_agent)
         """
         if sum(action) > (self.args.selected_ratio * self.num_node * (self.num_node - 1)):
-            self.penalty += self.penalty_values
+            self.penalty = self.penalty_values
 
         mlu_reaward = mlu
         rewards = mlu_reaward + self.penalty
-       
+    
         return rewards
 
     def lp_solve(self,critical_flow, tm):
-        mlu = self.solver.solve(tm, critical_flow)
-        mlu_opt = self.solver.solve(tm, self.all_flow_idx)
+        mlu, var_dict = self.solver.solve(tm, critical_flow)
+        mlu_opt, _ = self.solver.solve(tm, self.all_flow_idx)
+        if self.is_eval:
+            with open(f"output/var_dict_{self.tm_index}.json", "w") as f:
+                import json
+                json.dump(var_dict, f)
         if mlu == 0:
             mlu = 1
         return mlu, mlu_opt
@@ -112,7 +119,7 @@ class TE_Env(BaseEnv):
         info = {"rewards": np.mean(rewards),
                 "mlu": np.mean(mlu) }
 
-        return observation, rewards,False, dones, info
+        return observation, rewards, dones, False, info
     
     
 
