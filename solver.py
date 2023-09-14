@@ -64,10 +64,6 @@ class OneStepSRTopKSolver(Solver):
         y = pl.LpVariable.dicts(name='y',
                                     indices=np.arange(self.n_y),
                                     cat='Continuous')
-        # l = np.zeros((num_node, num_))
-        l = pl.LpVariable.dicts(name='l',
-                                    indices=np.arange(self.num_node * self.num_node),
-                                    cat='Continuous')
 
         # 2) objective function
         # minimize maximum link utilization
