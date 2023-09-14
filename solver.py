@@ -33,7 +33,7 @@ class OneStepSRTopKSolver(Solver):
         self.status = None
         self.solver = PULP_CBC_CMD(timeLimit=timeout, msg=False)
         # self.num_node = args.num_node
-        self.num_node = 12
+        self.num_node = args.number_of_nodes
         # self.critical_flow_idx = 
         self.n_critical_flows = 0
         self.list_link_end_at = list_link_end_at
