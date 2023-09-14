@@ -47,7 +47,6 @@ class BaseEnv(gym.Env):
         self.link2flow = None
         self.link2flow, self.flow2link = compute_lssr_path(args)
         self.ub = get_solution_bound(self.flow2link, args)
-
         self.flow2node_sr = calculate_flow2node_sr(args, self.flow2link)
         self.link2index = get_link2idex(self.nx_graph)
         self.observation_space = set_obs_space(args=self.args)
@@ -59,7 +58,24 @@ class BaseEnv(gym.Env):
         self.link_util = np.zeros(shape=(self.num_link,))
         self.path_mlu = np.zeros(shape=(self.num_node, self.num_node))
         self.tm_index = self.hist_step
-    
+        self.list_link_strated_at, self.list_link_end_at = self.get_link_started_end_at(args)
+        self.set_ENH = get_set_ENH(args, self.flow2link)
+        print(self.set_ENH)
+
+    def get_link_started_end_at(self, args ):
+        list_link_strated_at = {}
+        list_link_end_at = {}
+        for i in range(self.num_node):
+            list_link_end_at[i] = []
+            list_link_strated_at[i] = []
+
+        for u,v in self.nx_graph.edges:
+            
+            list_link_end_at[v].append(u)
+            list_link_strated_at[u].append(v)
+        
+        return list_link_strated_at, list_link_end_at
+
     def reset(self, **kwargs):
         raise("Not implement!!!")
     

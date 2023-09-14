@@ -13,8 +13,14 @@ class TE_Env(BaseEnv):
         self.routing_rule = np.zeros(shape=(self.num_node, self.num_node))
         self.current_base_solution = np.zeros(shape=(self.num_node, self.num_node))
         self.penalty = 0
-        self.penalty_values = -100
-        self.solver = OneStepSRTopKSolver(self.nx_graph, 1,1, self.link_ )
+        self.penalty_values = -10
+        self.solver = OneStepSRTopKSolver(args,self.nx_graph, 60,False, self.list_link_strated_at, self.list_link_end_at, self.idx2flow, self.set_ENH)
+        
+        all_flow_idx = []
+        for i, j in itertools.product(range(self.num_node), range(self.num_node)):
+            if i !=j:
+                all_flow_idx.append([i,j])
+        self.all_flow_idx = all_flow_idx
 
     def reset(self, **kwargs):
         self.tm_index = self.hist_step
@@ -83,40 +89,29 @@ class TE_Env(BaseEnv):
         if sum(action) > (self.args.selected_ratio * self.num_node * (self.num_node - 1)):
             self.penalty += self.penalty_values
 
-        mlu_reaward = -1.0 * mlu
+        mlu_reaward = mlu
         rewards = mlu_reaward + self.penalty
        
         return rewards
 
-    def lp_solve(self,action, tm):
-        return 0.5
+    def lp_solve(self,critical_flow, tm):
+        mlu = self.solver.solve(tm, critical_flow)
+        mlu_opt = self.solver.solve(tm, self.all_flow_idx)
+        if mlu == 0:
+            mlu = 1
+        return mlu, mlu_opt
     
     def step(self, action, use_solution=False):
         tm = self.tm[self.tm_index]
-        mlu = self.lp_solve(action, tm)
-        self.critical_link = self._convert_action(action)
-        rewards = self._reward(mlu=mlu, action=action)
+        self.critical_flow = self._convert_action(action)
+
+        mlu, mlu_opt = self.lp_solve(self.critical_flow, tm)
+        rewards = self._reward(mlu_opt/mlu, action=action)
         observation, dones = self._next_obs()
         self.penalty = 0
         info = {"rewards": np.mean(rewards),
                 "mlu": np.mean(mlu) }
-        print(action)
-        print(sum(action))
 
-
-        # self.routing_rule = self._convert_action(action)
-        
-        # tm = self.tm[self.tm_index]
-        # mlu, self.link_util = do_routing(tm, self.routing_rule, self.nx_graph, self.num_node, self.flow2link,
-        #                                      self.ub)
-        # self.path_mlu = get_path_mlu(self.routing_rule, self.num_node, self.flow2link, self.link_util, self.nx_graph)
-
-        # rewards = self._reward(mlu=mlu, path_mlu=self.path_mlu)
-
-        # observation, dones = self._next_obs()
-        # self.penalty = 0
-        # info = {"rewards": np.mean(rewards),
-        #          "mlu": np.mean(mlu) }
         return observation, rewards,False, dones, info
     
     
@@ -133,5 +128,5 @@ class TE_Env(BaseEnv):
         critical_flow = []
         for i,act in enumerate(action):
             if act == 1:
-                critical_flow += self.idx2flow[i]
+                critical_flow.append(self.idx2flow[i])
         return critical_flow

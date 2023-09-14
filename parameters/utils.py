@@ -2,7 +2,7 @@ info_keywords = ("rewards", "mlu")
 
 
 def get_experiment_name(args):
-    experiment_name =   f'{args.dataset}' \
+    experiment_name =   f'Qos_TE_{args.dataset}' \
                            f'_{args.n_path}_gamma_{args.gamma}' \
                            f'_global_state_{args.global_state}' \
                            f'_obs_state_{args.obs_state}_reward_{args.reward}' \

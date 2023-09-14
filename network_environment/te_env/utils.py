@@ -59,6 +59,20 @@ def link_in_path(i, j, u, v, k, flow2link):
     else:
         return 0
 
+def get_set_ENH(args, flow2link):
+    set_ENH = {}
+
+    num_node = args.num_node
+    for i in range(num_node):
+        for j in range(num_node):
+            set_ENH[(i,j)] = []
+            if i != j:
+                list_path = flow2link[(i,j)]
+                for path in list_path:
+                    next_hop = path[0][1]
+                    if next_hop not in set_ENH[(i,j)]:
+                        set_ENH[(i,j)].append(next_hop)
+    return set_ENH
 def has_path(i, j, flow2link):
     if flow2link[(i, j)]:
         return True
