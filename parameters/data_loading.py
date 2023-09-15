@@ -20,7 +20,7 @@ def get_data_size(dataset, debug=False):
     elif 'gnnet-40' in dataset:
         train_size = 250
         test_size = 250
-    elif 'ct-gen'in dataset:
+    elif 'ct-gen' in dataset:
         train_size = 150
         test_size = 150
     else:
