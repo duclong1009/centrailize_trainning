@@ -14,13 +14,13 @@ def get_data_size(dataset, debug=False):
     elif 'gnnet-75' in dataset:
         train_size = 150
         test_size = 150
-    elif 'gnnet-100'in dataset:
+    elif 'gnnet-100' in dataset:
         train_size = 20
         test_size = 20
-    elif 'gnnet-40':
+    elif 'gnnet-40' in dataset:
         train_size = 250
         test_size = 250
-    elif 'ct-gen':
+    elif 'ct-gen'in dataset:
         train_size = 150
         test_size = 150
     else:
