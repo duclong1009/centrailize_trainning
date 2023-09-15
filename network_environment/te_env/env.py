@@ -91,13 +91,16 @@ class TE_Env(BaseEnv):
             mlu: maximum link utilization (1,)
             mpu:  max path utilization (n_agent)
         """
-        if sum(action) > (self.args.selected_ratio * self.num_node * (self.num_node - 1)):
-            self.penalty = self.penalty_values
+        gap = sum(action) - (self.args.selected_ratio * self.num_node * (self.num_node - 1))
+        if gap > 0:
+            self.penalty = gap
+        else:
+            self.penalty = 0
 
         mlu_reaward = mlu
         rewards = mlu_reaward + self.penalty
     
-        return rewards
+        return rewards,gap 
 
     def lp_solve(self,critical_flow, tm, index):
         mlu, var_dict = self.solver.solve(tm, critical_flow)
@@ -123,13 +126,14 @@ class TE_Env(BaseEnv):
         time1 = time.time() 
         mlu, mlu_opt = self.lp_solve(self.critical_flow, tm, self.tm_index)
         lp_time = time.time() - time1
-        rewards = self._reward(mlu_opt/mlu, action=action)
+        rewards, pen = self._reward(mlu_opt/mlu, action=action)
         observation, dones = self._next_obs()
         self.penalty = 0
         info = {"rewards": np.mean(rewards),
                 "mlu": np.mean(mlu),
                 "mlu_opt": np.mean(mlu_opt),
-                "lp_time": lp_time }
+                "lp_time": lp_time,
+                 "penalty":pen }
 
         return observation, rewards, dones, False, info
     

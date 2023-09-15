@@ -169,7 +169,7 @@ class RunTestCallback(BaseCallback):
         obs = self.env.reset()
         done = [False]
 
-        sum_mlu,  sum_reward, sum_mlu_opt, lp_times = [], [], [], []
+        sum_mlu,  sum_reward, sum_mlu_opt, lp_times, list_pen = [], [], [], [], []
         while not done[-1]:
             action, _states = model.predict(obs)
             obs, rewards, done, info = self.env.step(action)
@@ -178,15 +178,18 @@ class RunTestCallback(BaseCallback):
             sum_mlu.append(info['mlu'])
             sum_mlu_opt.append(info['mlu_opt'])
             lp_times.append(info['lp_time'])
+            list_pen.append(info['penalty'])
         # breakpoint()
         mean_lp_time = np.mean(np.array(lp_times).flatten())
         sum_reward = np.array(sum_reward).flatten().mean()
         sum_mlu = np.array(sum_mlu).flatten().mean()
         sum_mlu_opt = np.array(sum_mlu_opt).flatten().mean()
+        mean_pen = np.mean(np.array(list_pen).flatten())
         self.writer.add_scalar('Test/Global_Reward', sum_reward, self.episode_count)
         self.writer.add_scalar('Test/MLU', sum_mlu, self.episode_count)
         self.writer.add_scalar('Test/mlu_opt', sum_mlu_opt, self.episode_count)
         self.writer.add_scalar('Test/lp_time', mean_lp_time, self.episode_count)
+        self.writer.add_scalar('Test/penalty', mean_pen, self.episode_count)
 
         self.log_rewards.append([sum_reward, sum_mlu, sum_mlu_opt])
         np.savetxt(os.path.join(self.log_dir, 'monitor_test.txt'), np.asarray(self.log_rewards), delimiter=',')
@@ -197,13 +200,15 @@ class RunTestCallback(BaseCallback):
             self.log_data['Test/sum_mlu_opt'] = [sum_mlu_opt]
             self.log_data['Test/step'] = [self.episode_count]
             self.log_data['Test/lp_time'] = [mean_lp_time]
+            self.log_data['Test/penalty'] = [mean_pen]
         else:
 
             self.log_data['Test/Global_Reward'].append(sum_reward)
             self.log_data['Test/MLU'].append(sum_mlu)
             self.log_data['Test/step'].append(self.episode_count)
             self.log_data['Test/sum_mlu_opt'].append(sum_mlu_opt)
-            self.log_data['Test/lp_time'] = [mean_lp_time]
+            self.log_data['Test/lp_time'].append(mean_lp_time)
+            self.log_data['Test/penalty'].append(mean_pen)
         self.episode_count += 1
 
         with open(self.log_data_path, 'wb') as fp:
