@@ -127,6 +127,17 @@ class RunTestCallback(BaseCallback):
         self.log_data = {}
         self.log_data_path = os.path.join(self.log_dir, 'log_data_test.pkl')
 
+    def aggregate_info(self, list_info):
+        result = {}
+        keys = list_info[0].keys()
+        for key in keys:
+            list_value = []
+            for info in list_info:
+                list_value.append(info[key])
+            result[key] = list_value
+
+        return result
+
     def _on_step(self) -> bool:
 
         if self.n_calls % self.check_freq != 0:
@@ -155,20 +166,21 @@ class RunTestCallback(BaseCallback):
         else:
             raise NotImplementedError('Not supported!')
 
-        obs, _info = self.env.reset()
-        done = False
+        obs = self.env.reset()
+        done = [False]
 
         sum_mlu,  sum_reward, sum_mlu_opt = [], [], []
-        while not done:
+        while not done[-1]:
             action, _states = model.predict(obs)
-            obs, rewards, _, done, info = self.env.step(action)
+            obs, rewards, done, info = self.env.step(action)
+            info = self.aggregate_info(info)
             sum_reward.append(rewards)
             sum_mlu.append(info['mlu'])
             sum_mlu_opt.append(info['mlu_opt'])
-
-        sum_reward = np.asarray(sum_reward).mean()
-        sum_mlu = np.asarray(sum_mlu).mean()
-        sum_mlu_opt = np.asarray(sum_mlu_opt).mean()
+        # breakpoint()
+        sum_reward = np.array(sum_reward).flatten().mean()
+        sum_mlu = np.array(sum_mlu).flatten().mean()
+        sum_mlu_opt = np.array(sum_mlu_opt).flatten().mean()
         self.writer.add_scalar('Test/Global_Reward', sum_reward, self.episode_count)
         self.writer.add_scalar('Test/MLU', sum_mlu, self.episode_count)
         self.writer.add_scalar('Test/sum_mlu_opt', sum_mlu_opt, self.episode_count)
@@ -249,17 +261,8 @@ def run_mobile_fix_num_user(data, run_dir, args):
     episode_length = int(args.episode_length)
     print("episode length", episode_length)
     if not args.test:
-        # env = []
-        # for i in range(10):
-        #     env.append(CellfreeSARLEnv(rank=i, args=args, is_eval=False))
-        # eval_env = TE_Env(rank=0, args=args, is_eval=True)
         eval_env = SubprocVecEnv([make_eval_env(rank=i, args=args) for i in range(args.n_eval_rollout_threads)])
         env = SubprocVecEnv([make_env(rank=i, args=args) for i in range(args.n_rollout_threads)])
-
-        # env = Monitor(env, os.path.join(f'../logs/{args.algorithm_name}/', args.experiment_name, 'monitor.csv'),
-        #               info_keywords=info_keywords)
-        # check_env(env)
-        # check_env(eval_env)
 
         # ------------------------------------- init alg  -------------------------------------
         print('---> Training new model')
@@ -310,6 +313,7 @@ def run_mobile_fix_num_user(data, run_dir, args):
         del model
 
     # run test
+    args.n_eval_rollout_threads = 1
     eval_env = TE_Env(rank=0, args=args, is_eval=True)
 
     print('---> Run test')
