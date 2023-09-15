@@ -6,6 +6,7 @@ import numpy as np
 import copy 
 from .utils import do_routing
 from solver import OneStepSRTopKSolver
+import time
 
 class TE_Env(BaseEnv):
     def __init__(self, rank, args, is_eval=False) -> None:
@@ -116,16 +117,19 @@ class TE_Env(BaseEnv):
         return mlu, mlu_opt
     
     def step(self, action, use_solution=False):
+        
         tm = self.tm[self.tm_index]
         self.critical_flow = self._convert_action(action)
-
+        time1 = time.time() 
         mlu, mlu_opt = self.lp_solve(self.critical_flow, tm, self.tm_index)
+        lp_time = time.time() - time1
         rewards = self._reward(mlu_opt/mlu, action=action)
         observation, dones = self._next_obs()
         self.penalty = 0
         info = {"rewards": np.mean(rewards),
                 "mlu": np.mean(mlu),
-                "mlu_opt": np.mean(mlu_opt) }
+                "mlu_opt": np.mean(mlu_opt),
+                "lp_time": lp_time }
 
         return observation, rewards, dones, False, info
     
