@@ -98,7 +98,7 @@ class TE_Env(BaseEnv):
             self.penalty = 0
 
         mlu_reaward = mlu
-        rewards = mlu_reaward + self.penalty
+        rewards = mlu_reaward - self.penalty
     
         return rewards,gap 
 
