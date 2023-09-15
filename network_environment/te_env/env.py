@@ -14,7 +14,10 @@ class TE_Env(BaseEnv):
         self.current_base_solution = np.zeros(shape=(self.num_node, self.num_node))
         self.penalty = 0
         self.penalty_values = -10
-
+        # print(self.data.shape)
+        # print(self.tm.shape)
+        self.args.data_length = self.tm.shape[0]
+        self.mlu_opt = np.ones(self.tm.shape[0]) * -1
         all_flow_idx = []
         for i, j in itertools.product(range(self.num_node), range(self.num_node)):
             if i !=j:
@@ -95,13 +98,19 @@ class TE_Env(BaseEnv):
     
         return rewards
 
-    def lp_solve(self,critical_flow, tm):
+    def lp_solve(self,critical_flow, tm, index):
         mlu, var_dict = self.solver.solve(tm, critical_flow)
-        mlu_opt, _ = self.solver.solve(tm, self.all_flow_idx)
+        if self.mlu_opt[index] == -1:
+            mlu_opt, _ = self.solver.solve(tm, self.all_flow_idx)
+            self.mlu_opt[index] = mlu_opt
+        else:
+            mlu_opt = self.mlu_opt[index]
+
         if self.is_eval:
             with open(f"output/var_dict_{self.tm_index}.json", "w") as f:
                 import json
                 json.dump(var_dict, f)
+                
         if mlu == 0:
             mlu = 1
         return mlu, mlu_opt
@@ -110,7 +119,7 @@ class TE_Env(BaseEnv):
         tm = self.tm[self.tm_index]
         self.critical_flow = self._convert_action(action)
 
-        mlu, mlu_opt = self.lp_solve(self.critical_flow, tm)
+        mlu, mlu_opt = self.lp_solve(self.critical_flow, tm, self.tm_index)
         rewards = self._reward(mlu_opt/mlu, action=action)
         observation, dones = self._next_obs()
         self.penalty = 0

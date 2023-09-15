@@ -8,6 +8,7 @@ class BaseEnv(gym.Env):
     def __init__(self, rank, args, is_eval=False) -> None:
         super().__init__()
         self.is_eval = is_eval
+
         self.nenvs = args.n_eval_rollout_threads if is_eval else args.n_rollout_threads
         self.rank = rank
 

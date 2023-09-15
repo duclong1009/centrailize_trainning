@@ -216,6 +216,26 @@ def make_env(rank, args, seed=0):
     set_random_seed(seed)
     return _init
 
+def make_eval_env(rank, args, seed=0):
+    """
+    Utility function for multiprocessed env.
+
+    :param env_id: (str) the environment ID
+    :param num_env: (int) the number of environments you wish to have in subprocesses
+    :param seed: (int) the inital seed for RNG
+    :param rank: (int) index of the subprocess
+    """
+
+    def _init():
+        env = TE_Env(rank=rank, args=args, is_eval=True)
+        env = Monitor(env, os.path.join(f'../logs/{args.algorithm_name}/', args.experiment_name, f'monitor_eval_{rank}'),
+                      info_keywords=info_keywords)
+        check_env(env)
+        # env.seed(seed + rank)
+        return env
+
+    set_random_seed(seed)
+    return _init
 
 def run_mobile_fix_num_user(data, run_dir, args):
     writer = SummaryWriter(log_dir=run_dir)
@@ -232,7 +252,8 @@ def run_mobile_fix_num_user(data, run_dir, args):
         # env = []
         # for i in range(10):
         #     env.append(CellfreeSARLEnv(rank=i, args=args, is_eval=False))
-        eval_env = TE_Env(rank=0, args=args, is_eval=True)
+        # eval_env = TE_Env(rank=0, args=args, is_eval=True)
+        eval_env = SubprocVecEnv([make_eval_env(rank=i, args=args) for i in range(args.n_eval_rollout_threads)])
         env = SubprocVecEnv([make_env(rank=i, args=args) for i in range(args.n_rollout_threads)])
 
         # env = Monitor(env, os.path.join(f'../logs/{args.algorithm_name}/', args.experiment_name, 'monitor.csv'),
