@@ -49,7 +49,6 @@ def main(args):
     # ------------------------------------- init location ap/user  -------------------------------------
     
     data = load_data(args)
-    args.n_agents = args.num_node
 
     run_mobile_fix_num_user(data, run_dir, args)
 

@@ -27,14 +27,12 @@ class OneStepSRTopKSolver(Solver):
         """
         G: networkx Digraph, a network topology
         """
+        
         self.problem = None
         self.var_dict = None
         self.solution = None
-        self.status = None
         self.solver = PULP_CBC_CMD(timeLimit=timeout, msg=False)
-        # self.num_node = args.num_node
         self.num_node = args.num_node
-        # self.critical_flow_idx = 
         self.n_critical_flows = 0
         self.list_link_end_at = list_link_end_at
         self.list_link_strated_at = list_link_strated_at
@@ -42,7 +40,10 @@ class OneStepSRTopKSolver(Solver):
         self.set_ENH = set_ENH
         self.idx2edge, self.n_y = self.get_idx2edge()
         self.all_flow = all_flow
-        
+        self.capacity = {}
+        for u, v in self.G.edges:
+            self.capacity[(u,v)] = self.G.get_edge_data(u, v)['capacity']
+
     def get_idx2edge(self,):
         idx2edge = {}
         num_node = self.num_node
@@ -71,7 +72,7 @@ class OneStepSRTopKSolver(Solver):
 
         #8bc 
         for i, j in self.G.edges:
-            link_capacity = self.G.get_edge_data(i, j)['capacity']
+            link_capacity = self.capacity[(i,j)]
             lp_problem += pl.lpSum([y[self.idx2edge[(i,j,d)]] for d in range(num_node)]) <= link_capacity * uti
         #8d 
         for flow_id in critical_flow_idx:
@@ -98,17 +99,14 @@ class OneStepSRTopKSolver(Solver):
         for d in range(num_node):
             sum_end = pl.lpSum([y[self.idx2edge[(k,d,d)]] for k in self.list_link_end_at[d]])
             sum_in = pl.lpSum([y[self.idx2edge[(d,k,d)]] for k in self.list_link_strated_at[d]])
-            # sum_end = pl.lpSum([y[k * num_node + d + d * num_node *num_node] for k in self.list_link_end_at[d]])
-            # sum_in = pl.lpSum([y[d * num_node + k +d * num_node* num_node] for k in self.list_link_strated_at[d]])
             eq = sum_end - sum_in
-            total_t = pl.lpSum([tm[s,d] for s in range(num_node) if s!= d])
+            total_t = pl.lpSum([tm[s,d] for s in range(num_node)])
             lp_problem += eq == total_t
 
         #8g
         for d in range(num_node):
             for i,j in self.G.edges:
                 lp_problem += y[self.idx2edge[(i,j,d)]] >=0
-                # lp_problem += y[i * num_node+ j +d *num_node *num_node] >=0
 
         return lp_problem, uti
 
@@ -119,19 +117,10 @@ class OneStepSRTopKSolver(Solver):
         return solution
 
     def extract_solution(self, problem):
-
-        # solution = self.init_solution()
         # extract solution
         self.var_dict = {}
         for v in problem.variables():
             self.var_dict[v.name] = v.varValue
-
-        # self.solution = np.empty([self.num_node, self.num_node, self.num_node])
-        # for f, k in itertools.product(range(self.n_critical_flows), range(self.num_node)):
-        #     src, dst = self.critical_flow_idx[f]
-        #     solution[src, dst, k] = self.var_dict['x_{}'.format(f * self.num_node + k)]
-
-        # return solution
         return self.var_dict['utilization'], self.var_dict
 
     def solve(self, tm, critical_flow_idx):
@@ -141,19 +130,6 @@ class OneStepSRTopKSolver(Solver):
         self.problem = problem
         self.solution, self.var_dict = self.extract_solution(problem)
         return self.solution, self.var_dict
-
-    def get_paths(self, i, j):
-        if i == j:
-            list_k = [i]
-        else:
-            list_k = np.where(self.solution[i, j] > 0)[0]
-        paths = []
-        for k in list_k:
-            path = []
-            path += shortest_path(self.G, i, k)[:-1]
-            path += shortest_path(self.G, k, j)
-            paths.append((k, path))
-        return paths
 
 
 if __name__ == "__main__":

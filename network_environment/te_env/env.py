@@ -21,7 +21,7 @@ class TE_Env(BaseEnv):
                 all_flow_idx.append([i,j])
         self.all_flow_idx = all_flow_idx
 
-        self.solver = OneStepSRTopKSolver(args,self.nx_graph, 60,False, self.list_link_strated_at, self.list_link_end_at, self.idx2flow, self.set_ENH, self.all_flow_idx)
+        self.solver = OneStepSRTopKSolver(args,self.nx_graph, args.time_out ,False, self.list_link_strated_at, self.list_link_end_at, self.idx2flow, self.set_ENH, self.all_flow_idx)
         
         
 
@@ -32,7 +32,8 @@ class TE_Env(BaseEnv):
         observation = self._prepare_state()
         self.tm_index = 1
         # self._get_current_base_solution()
-        infos = {"mlu": mlu}
+        infos = {"mlu": mlu,
+                    "mlu_opt":mlu}
         self.penalty = 0
         return observation, infos
     
@@ -60,14 +61,11 @@ class TE_Env(BaseEnv):
     def _get_next_state(self, is_reset=False):
         if is_reset:
             observation = self.observation_space.sample()
-
             done = False
-            self._get_current_data()
 
         else:
             self._update_counter()
             done = self._is_done()
-            self._get_current_data()
 
             observation = self._prepare_state()
 
@@ -117,7 +115,8 @@ class TE_Env(BaseEnv):
         observation, dones = self._next_obs()
         self.penalty = 0
         info = {"rewards": np.mean(rewards),
-                "mlu": np.mean(mlu) }
+                "mlu": np.mean(mlu),
+                "mlu_opt": np.mean(mlu_opt) }
 
         return observation, rewards, dones, False, info
     

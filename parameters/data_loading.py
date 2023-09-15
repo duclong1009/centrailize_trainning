@@ -1,8 +1,5 @@
 import os
 import copy
-from parameters.env_init import init_data_static
-from parameters.env_init_dyn_mobile import init_data_dyn_mobile
-from parameters.env_init_mobile import load_mobile_data
 import pickle
 import numpy as np
 # from sklearn.preprocessing import MinMaxScaler
@@ -14,10 +11,10 @@ def get_data_size(dataset, debug=False):
     elif 'geant' in dataset:
         train_size = 500
         test_size = 500
-    elif 'gnnet-75':
-        train_size = 20
-        test_size = 20
-    elif 'gnnet-100':
+    elif 'gnnet-75' in dataset:
+        train_size = 150
+        test_size = 150
+    elif 'gnnet-100'in dataset:
         train_size = 20
         test_size = 20
     elif 'gnnet-40':
@@ -154,68 +151,9 @@ def load_data(args):
         'train/gt': train_df,
         'test/gt': test_df,
     }
-    if args.obs_state == 5:
-        data_split_cs(data_traffic, train_size, sc, n_node, return_data)
 
     print('train data', train_df.shape)
     print('test data', test_df.shape)
 
 
     return return_data
-
-
-def load_final_test_data(args):
-    # loading dataset
-    test_data_folder = os.path.join(args.data_folder, 'test_data')
-    if not os.path.exists(test_data_folder):
-        os.makedirs(test_data_folder)
-
-    if 'dyn_mobile' in args.scenario_name:
-        list_of_data = init_data_dyn_mobile(args)
-        test_data = list_of_data
-
-        data = {
-            'test': test_data
-        }
-
-    else:
-        if args.scenario_name == 'mobile':
-            BETAA, user_loc, Phii, V = load_mobile_data(args, is_test=True)
-            V_test = V
-
-        else:
-            BETAA, user_loc, Phii = init_data_static(args)
-            V_train, V_test = None, None
-
-        print('Scenario', args.scenario_name)
-        print('BETAA', BETAA.shape)
-        print('user_loc', user_loc.shape)
-        print('Phii', Phii.shape)
-
-        BETAA_test = BETAA
-        Phii_test = Phii
-
-        data = {
-            'test/BETAA': BETAA_test,
-            'test/Phii': Phii_test,
-            'test/V': V_test,
-        }
-
-    return data
-
-
-def prepare_dyn_data(data, mode='train'):
-    num_user = data['num_user']
-    num_scenario = data['num_scenario']
-    BETAA = data['data']['beta']
-    user_loc = data['data']['user_loc']
-    Phii = data['data']['phi']
-    V = data['data']['V']
-
-    sub_data = {
-        f'{mode}/BETAA': BETAA,
-        f'{mode}/Phii': Phii,
-        f'{mode}/V': V,
-    }
-
-    return sub_data, num_user, num_scenario

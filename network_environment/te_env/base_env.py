@@ -60,7 +60,6 @@ class BaseEnv(gym.Env):
         self.tm_index = self.hist_step
         self.list_link_strated_at, self.list_link_end_at = self.get_link_started_end_at(args)
         self.set_ENH = get_set_ENH(args, self.flow2link)
-        print(self.set_ENH)
 
     def get_link_started_end_at(self, args ):
         list_link_strated_at = {}

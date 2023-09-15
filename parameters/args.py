@@ -11,11 +11,9 @@ def get_args():
     # ppo = SARL
     # MARL-CTDE-shared = [--algorithm_name=mappo] + [--runner==shared]
     parser.add_argument('--algorithm_name', type=str, help='alg', default='ppo', choices=['mappo', 'ippo', 'ppo'])
-
-    parser.add_argument('--min_rate', type=float, help='minimum rate requirement', default=8)
    
     parser.add_argument('--train_size', type=float, help='number of data sample for training',
-                        default=0.7)
+                        default=1)
 
     parser.add_argument('--K', type=int, default=1)
 
@@ -24,23 +22,14 @@ def get_args():
                         default=1, help="Number of torch threads for training")
     parser.add_argument("--n_rollout_threads", type=int, default=20,
                         help="Number of parallel envs for training rollouts")
-    parser.add_argument("--n_eval_rollout_threads", type=int, default=20,
+    parser.add_argument("--n_eval_rollout_threads", type=int, default=1,
                         help="Number of parallel envs for evaluating rollouts")
     parser.add_argument("--num_env_steps", type=int, default=10e10,
                         help='Number of environment steps to train (default: 10e6)')
-    parser.add_argument("--env_name", type=str, default='CellfreeMIMO', help="specify the name of environment")
     parser.add_argument("--episode_length", type=int,
                         default=1000, help="Max length for any episode")
     parser.add_argument("--device", type=str, default='cuda:0', help="specify the name of device",
                         choices=['cuda:0', 'cuda:1', 'cpu'])
-
-    # for dynamic number of user scenario. The number of training rounds per case.
-    parser.add_argument("--num_training_round", type=int,
-                        default=1, help="The number of training rounds per case (dyn_mobile scenario)")
-    parser.add_argument("--num_user_case", type=int,
-                        default=10, help="The number of cases of dynamic users")
-    parser.add_argument("--min_scenario_per_case", type=int,
-                        default=5, help="Minimum number of scenario per case of num_user (in dyn_mobile)")
 
     # network parameters
     parser.add_argument("--runner", type=str, choices=['shared', 'federated', 'separated', 'federated_critic'],
@@ -119,18 +108,6 @@ def get_args():
                         help="by default True, whether to mask useless data in policy loss.")
     parser.add_argument("--huber_delta", type=float, default=10.0, help=" coefficient of huber loss.")
 
-    # run parameters
-    parser.add_argument("--use_linear_lr_decay", action='store_true',
-                        default=False, help='use a linear schedule on the learning rate')
-    parser.add_argument('--use_rnn_policy', action='store_true', default=False,
-                        help='use rnn policy')
-    parser.add_argument("--data_chunk_length", type=int, default=10,
-                        help="Time length of chunks used to train a recurrent_policy")
-
-    # save parameters
-    parser.add_argument("--save_interval", type=int, default=1,
-                        help="time duration between contiunous twice models saving.")
-
     # log parameters
     parser.add_argument("--log_interval", type=int, default=1,
                         help="time duration between contiunous twice log printing.")
@@ -146,18 +123,6 @@ def get_args():
     # parameter for dataset
     parser.add_argument('--seed', type=int, default=1)
 
-    parser.add_argument('--obs_state', type=int, default=2,
-                        help='State setting, (default 0)')
-    parser.add_argument('--action_state', type=int, default=0, choices=[0, 1],
-                        help='State setting, (default 0)')
-    parser.add_argument('--num_power_level', type=int, default=20, help='State setting, (default 0)')
-
-    parser.add_argument('--global_state', type=int, default=3,
-                        help='State setting, (default 0)')
-    parser.add_argument('--reward', type=str, help='reward function',
-                        default='SF', choices=['PF1', 'PF2', 'SF', 'SFP', 'SF2', 'const', 'EE'])
-    parser.add_argument('--reward_type', type=str, help='reward type',
-                        default='global', choices=['global', 'local', 'combine'])
     parser.add_argument('--weight', type=float, help='reward weight', default=0.1)
 
     parser.add_argument('--data_folder', type=str, default='data')
@@ -176,6 +141,8 @@ def get_args():
                         help='n-segment path, (default 2)')
     parser.add_argument('--n_path', type=int, default=3)
     parser.add_argument('--selected_ratio', type=float, default=0.1)    
+
+    parser.add_argument('--time_out', type=int, default=1)
     args = parser.parse_args()
     # checking_parameter(args)
 

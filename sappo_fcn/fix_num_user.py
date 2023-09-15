@@ -77,20 +77,15 @@ class TensorboardCallback(BaseCallback):
                 self.writer.add_scalar('Train/Global_Reward', mean_reward, self.episode_count)
                 rewards = np.mean(data.rewards.values[-self.nenv:])
                 mlu = np.mean(data.mlu.values[-self.nenv:])
-
+                mlu_opt = np.mean(data.mlu_opt.values[-self.nenv:])
                 self.writer.add_scalar('Train/Global_Reward', rewards, self.episode_count)
                 self.writer.add_scalar('Train/mlu', mlu, self.episode_count)
-
-                # # New best model, you could save the agent here
-                # if mean_reward > self.best_mean_reward:
-                #     self.best_mean_reward = mean_reward
-                #     # Example for saving best model
-                #     if self.verbose > 0:
-                #         print(f"Saving new best model to {self.save_path}.zip")
+                self.writer.add_scalar('Train/mlu_opt', mlu_opt, self.episode_count)
                 self.model.save(self.save_path)
                 self.last_reward = mean_reward
                 if 'Train/Global_Reward' not in self.log_data.keys():
                     self.log_data['Train/Global_Reward'] = [mean_reward]
+                    
                     self.log_data['Train/Rewards'] = [rewards]
                     self.log_data['Train/step'] = [self.episode_count]
                 else:
@@ -163,31 +158,35 @@ class RunTestCallback(BaseCallback):
         obs, _info = self.env.reset()
         done = False
 
-        sum_mlu,  sum_reward = [], []
+        sum_mlu,  sum_reward, sum_mlu_opt = [], [], []
         while not done:
             action, _states = model.predict(obs)
             obs, rewards, _, done, info = self.env.step(action)
             sum_reward.append(rewards)
             sum_mlu.append(info['mlu'])
+            sum_mlu_opt.append(info['mlu_opt'])
 
         sum_reward = np.asarray(sum_reward).mean()
         sum_mlu = np.asarray(sum_mlu).mean()
-
+        sum_mlu_opt = np.asarray(sum_mlu_opt).mean()
         self.writer.add_scalar('Test/Global_Reward', sum_reward, self.episode_count)
         self.writer.add_scalar('Test/MLU', sum_mlu, self.episode_count)
+        self.writer.add_scalar('Test/sum_mlu_opt', sum_mlu_opt, self.episode_count)
 
-        self.log_rewards.append([sum_reward, sum_mlu])
+        self.log_rewards.append([sum_reward, sum_mlu, sum_mlu_opt])
         np.savetxt(os.path.join(self.log_dir, 'monitor_test.txt'), np.asarray(self.log_rewards), delimiter=',')
 
         if 'Test/Global_Reward' not in self.log_data.keys():
             self.log_data['Test/Global_Reward'] = [sum_reward]
             self.log_data['Test/MLU'] = [sum_mlu]
+            self.log_data['Test/sum_mlu_opt'] = [sum_mlu_opt]
             self.log_data['Test/step'] = [self.episode_count]
         else:
 
             self.log_data['Test/Global_Reward'].append(sum_reward)
             self.log_data['Test/MLU'].append(sum_mlu)
             self.log_data['Test/step'].append(self.episode_count)
+            self.log_data['Test/sum_mlu_opt'].append(sum_mlu_opt)
         self.episode_count += 1
 
         with open(self.log_data_path, 'wb') as fp:
@@ -284,7 +283,7 @@ def run_mobile_fix_num_user(data, run_dir, args):
                                               writer=writer,
                                               check_freq=episode_length,
                                               device=args.device)],
-                    log_interval=1
+                    log_interval=args.log_interval
                     )
 
         del model
