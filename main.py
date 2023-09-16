@@ -29,7 +29,7 @@ from parameters.args import get_args
 
 from parameters.utils import get_experiment_name
 
-
+from run_topk import run_topk
 from sappo_fcn.fix_num_user import run_mobile_fix_num_user
 
 
@@ -49,8 +49,12 @@ def main(args):
     # ------------------------------------- init location ap/user  -------------------------------------
     
     data = load_data(args)
-
-    run_mobile_fix_num_user(data, run_dir, args)
+    if args.runner_type == "topk":
+        run_topk(data, run_dir, args)
+    elif args.runner_type =="qos_rl":
+        run_mobile_fix_num_user(data, run_dir, args)
+    else:
+        raise("Not corret runner")
 
 
 

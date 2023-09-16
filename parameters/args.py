@@ -10,6 +10,7 @@ def get_args():
     # ippo = MARL-IL
     # ppo = SARL
     # MARL-CTDE-shared = [--algorithm_name=mappo] + [--runner==shared]
+    parser.add_argument('--runner_type', type=str, default="qos_rl", choices=['qos_rl', 'topk'])
     parser.add_argument('--algorithm_name', type=str, help='alg', default='ppo', choices=['mappo', 'ippo', 'ppo'])
    
     parser.add_argument('--train_size', type=float, help='number of data sample for training',
