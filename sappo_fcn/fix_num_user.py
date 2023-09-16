@@ -78,9 +78,13 @@ class TensorboardCallback(BaseCallback):
                 rewards = np.mean(data.rewards.values[-self.nenv:])
                 mlu = np.mean(data.mlu.values[-self.nenv:])
                 mlu_opt = np.mean(data.mlu_opt.values[-self.nenv:])
+                lp_time = np.mean(data.lp_time.values[-self.nenv:])
+                penalty = np.mean(data.penalty.values[-self.nenv:])
                 self.writer.add_scalar('Train/Global_Reward', rewards, self.episode_count)
                 self.writer.add_scalar('Train/mlu', mlu, self.episode_count)
                 self.writer.add_scalar('Train/mlu_opt', mlu_opt, self.episode_count)
+                self.writer.add_scalar('Train/lptime', lp_time)
+                self.writer.add_scalar('Train/penalty', penalty)
                 self.model.save(self.save_path)
                 self.last_reward = mean_reward
                 if 'Train/Global_Reward' not in self.log_data.keys():
@@ -88,12 +92,15 @@ class TensorboardCallback(BaseCallback):
                     
                     self.log_data['Train/Rewards'] = [rewards]
                     self.log_data['Train/step'] = [self.episode_count]
+                    self.log_data['Train/lp_time'] = [lp_time]
+                    self.log_data['Train/penalty'] = [penalty]
                 else:
 
                     self.log_data['Train/Global_Reward'].append(mean_reward)
                     self.log_data['Train/Rewards'].append(rewards)
                     self.log_data['Train/step'].append(self.episode_count)
-
+                    self.log_data['Train/lp_time'].append(lp_time)
+                    self.log_data['Train/penalty'].append(penalty)
                 self.episode_count += 1
 
                 with open(self.log_data_path, 'wb') as fp:

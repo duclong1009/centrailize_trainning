@@ -22,9 +22,9 @@ class TE_Env(BaseEnv):
         all_flow_idx = []
         for i, j in itertools.product(range(self.num_node), range(self.num_node)):
             if i !=j:
-                all_flow_idx.append([i,j])
+                all_flow_idx.append((i,j))
         self.all_flow_idx = all_flow_idx
-
+        print(self.all_flow_idx)
         self.solver = OneStepSRTopKSolver(args,self.nx_graph, args.time_out ,False, self.list_link_strated_at, self.list_link_end_at, self.idx2flow, self.set_ENH, self.all_flow_idx)
         
         
@@ -114,9 +114,11 @@ class TE_Env(BaseEnv):
             with open(f"output/var_dict_{self.tm_index}.json", "w") as f:
                 import json
                 json.dump(var_dict, f)
-                
         if mlu == 0:
             mlu = 1
+        if mlu < 0:
+            print("MLU", mlu)
+            raise("MLU less than 0")
         return mlu, mlu_opt
     
     def step(self, action, use_solution=False):

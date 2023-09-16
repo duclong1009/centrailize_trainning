@@ -64,7 +64,7 @@ class OneStepSRTopKSolver(Solver):
 
         y = pl.LpVariable.dicts(name='y',
                                     indices=np.arange(self.n_y),
-                                    cat='Continuous')
+                                    cat='Continuous', lowBound=0.0)
 
         # 2) objective function
         # minimize maximum link utilization
@@ -84,17 +84,21 @@ class OneStepSRTopKSolver(Solver):
             lp_problem += eq == -tm[i,d]
         
         
-        #8e
+        # 8e
         for flow in self.all_flow:
-            if flow not in critical_flow_idx:
-                i,d = flow
-                len_set_ENH = len(self.set_ENH[(i,d)])
+            i, d = flow
+            # print(type(critical_flow_idx[0]))
+            if (i, d) not in critical_flow_idx:
+                len_set_ENH = len(self.set_ENH[(i, d)])
                 for k in self.list_link_strated_at[i]:
-                    if k in self.set_ENH[(i,d)]:
-                        lp_problem += y[self.idx2edge[(i,k,d)]] == 0
+                    if k not in self.set_ENH[(i, d)]:
+                        lp_problem += y[self.idx2edge[(i, k, d)]] == 0
                     else:
-                        lp_problem += y[self.idx2edge[(i,k,d)]] == (pl.lpSum([y[self.idx2edge[(n,i,d)]] for n in self.list_link_end_at[i]]) + tm[i,d])/len_set_ENH
-        
+                        lp_problem += y[self.idx2edge[(i, k, d)]] == (pl.lpSum([y[self.idx2edge[(n, i, d)]]
+                                                                                for n in self.list_link_end_at[i]])
+                                                                      + tm[i, d]) / len_set_ENH
+
+
         #8f
         for d in range(num_node):
             sum_end = pl.lpSum([y[self.idx2edge[(k,d,d)]] for k in self.list_link_end_at[d]])
@@ -103,10 +107,10 @@ class OneStepSRTopKSolver(Solver):
             total_t = pl.lpSum([tm[s,d] for s in range(num_node)])
             lp_problem += eq == total_t
 
-        #8g
-        for d in range(num_node):
-            for i,j in self.G.edges:
-                lp_problem += y[self.idx2edge[(i,j,d)]] >=0
+        # #8g
+        # for d in range(num_node):
+        #     for i,j in self.G.edges:
+        #         lp_problem += y[self.idx2edge[(i,j,d)]] >=0
 
         return lp_problem, uti
 
@@ -126,56 +130,59 @@ class OneStepSRTopKSolver(Solver):
     def solve(self, tm, critical_flow_idx):
         self.critical_flow_idx = critical_flow_idx
         problem, x = self.create_problem(tm, critical_flow_idx)
+        import time
+        t1 = time.time()
         problem.solve(solver=self.solver)
+        # print("Time solve",time.time() - t1)
         self.problem = problem
         self.solution, self.var_dict = self.extract_solution(problem)
         return self.solution, self.var_dict
 
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    import json
-    with open("critical_flow_idx.json", "r") as f:
-        critical_flow_idx = json.load(f)
-    # critical_flow_idx_ = {}
-    # for u in critical_flow_idx.keys():
-    #     critical_flow_idx_[int(u)] = critical_flow_idx[u]
+#     import json
+#     with open("critical_flow_idx.json", "r") as f:
+#         critical_flow_idx = json.load(f)
+#     # critical_flow_idx_ = {}
+#     # for u in critical_flow_idx.keys():
+#     #     critical_flow_idx_[int(u)] = critical_flow_idx[u]
 
-    with open("idx2flow.json", "r") as f:
-        idx2flow = json.load(f)
-    idx2flow_ = {}
-    for u in idx2flow.keys():
-        idx2flow_[int(u)] = idx2flow[u]
+#     with open("idx2flow.json", "r") as f:
+#         idx2flow = json.load(f)
+#     idx2flow_ = {}
+#     for u in idx2flow.keys():
+#         idx2flow_[int(u)] = idx2flow[u]
 
-    with open("list_link_end_at.json", "r") as f:
-        list_link_end_at = json.load(f)
+#     with open("list_link_end_at.json", "r") as f:
+#         list_link_end_at = json.load(f)
 
-    list_link_end_at_ = {}
-    for u in list_link_end_at.keys():
-        list_link_end_at_[int(u)] = list_link_end_at[u]
+#     list_link_end_at_ = {}
+#     for u in list_link_end_at.keys():
+#         list_link_end_at_[int(u)] = list_link_end_at[u]
 
-    with open("list_link_stated_at.json", "r") as f:
-        list_link_stated_at = json.load(f)
-    list_link_stated_at_ = {}
-    for u in list_link_stated_at.keys():
-        list_link_stated_at_[int(u)] = list_link_stated_at[u]
-    from network_environment.te_env.utils import *
-    import numpy as np
-    tm = np.load("tm.npy")
+#     with open("list_link_stated_at.json", "r") as f:
+#         list_link_stated_at = json.load(f)
+#     list_link_stated_at_ = {}
+#     for u in list_link_stated_at.keys():
+#         list_link_stated_at_[int(u)] = list_link_stated_at[u]
+#     from network_environment.te_env.utils import *
+#     import numpy as np
+#     tm = np.load("tm.npy")
 
-    args = {"num_node":12}
-    # args.num_node = 12
-    # breakpoint()
-    nx_graph = load_network_topology("abilene", "data")
-    solver = OneStepSRTopKSolver(args, nx_graph, 600,1, list_link_stated_at_, list_link_end_at_, idx2flow_, list_link_stated_at_ )
-    # solver.create_problem(tm, critical_flow_idx)
-    # breakpoint()
-    u = solver.solve(tm, critical_flow_idx)
+#     args = {"num_node":12}
+#     # args.num_node = 12
+#     # breakpoint()
+#     nx_graph = load_network_topology("abilene", "data")
+#     solver = OneStepSRTopKSolver(args, nx_graph, 600,1, list_link_stated_at_, list_link_end_at_, idx2flow_, list_link_stated_at_ )
+#     # solver.create_problem(tm, critical_flow_idx)
+#     # breakpoint()
+#     u = solver.solve(tm, critical_flow_idx)
     
-    num_node = 12
-    all_flow_idx = []
-    for i, j in itertools.product(range(num_node), range(num_node)):
-        if i !=j:
-            all_flow_idx.append([i,j])
-    u_opt = solver.solve(tm, all_flow_idx)
-    print(u, u_opt)
+#     num_node = 12
+#     all_flow_idx = []
+#     for i, j in itertools.product(range(num_node), range(num_node)):
+#         if i !=j:
+#             all_flow_idx.append([i,j])
+#     u_opt = solver.solve(tm, all_flow_idx)
+#     print(u, u_opt)
