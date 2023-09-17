@@ -145,7 +145,6 @@ def do_routing(tm, routing_rule, nx_graph, flow2link, ub, link2idx, idx2flow):
     
     n_link = len(nx_graph.edges)
     link_loads = np.zeros(n_link)
-    
     mlu = 0
     for key in idx2flow.keys():
             i,j,k = idx2flow[key]

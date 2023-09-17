@@ -90,6 +90,7 @@ class TE_Env(BaseEnv):
         tm = self.tm[self.tm_index]
         self.routing_rule = self._convert_action(action)
         mlu, link_mlu = do_routing(tm, self.routing_rule, self.nx_graph, self.flow2link, self.ub, self.link2idx, self.idx2flow)
+        print(mlu)
         rewards  = self._reward(mlu)
         observation, dones = self._next_obs()
         self.penalty = 0
@@ -111,7 +112,7 @@ class TE_Env(BaseEnv):
 
     def _convert_action(self, action):
         ub = self.ub
-        routing_rule = np.ones((self.num_node, self.num_node,self.args.n_path)) * np.inf
+        routing_rule = np.ones((self.num_node, self.num_node,self.args.n_path)) * -999999
 
         for i, value in enumerate(action): 
             u,v,k = self.idx2flow[i]

@@ -187,7 +187,7 @@ class RunTestCallback(BaseCallback):
         self.writer.add_scalar('Test/penalty', mean_pen, self.episode_count)
 
         self.log_rewards.append([sum_reward, sum_mlu, sum_mlu_opt])
-        np.savetxt(os.path.join(self.log_dir, 'monitor_test.txt'), np.asarray(self.log_rewards), delimiter=',')
+        # np.savetxt(os.path.join(self.log_dir, 'monitor_test.txt'), np.asarray(self.log_rewards), delimiter=',')
 
         if 'Test/Global_Reward' not in self.log_data.keys():
             self.log_data['Test/Global_Reward'] = [sum_reward]
