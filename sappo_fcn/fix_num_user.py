@@ -77,13 +77,9 @@ class TensorboardCallback(BaseCallback):
                 self.writer.add_scalar('Train/Global_Reward', mean_reward, self.episode_count)
                 rewards = np.mean(data.rewards.values[-self.nenv:])
                 mlu = np.mean(data.mlu.values[-self.nenv:])
-                mlu_opt = np.mean(data.mlu_opt.values[-self.nenv:])
-                lp_time = np.mean(data.lp_time.values[-self.nenv:])
                 penalty = np.mean(data.penalty.values[-self.nenv:])
                 self.writer.add_scalar('Train/Global_Reward', rewards, self.episode_count)
                 self.writer.add_scalar('Train/mlu', mlu, self.episode_count)
-                self.writer.add_scalar('Train/mlu_opt', mlu_opt, self.episode_count)
-                self.writer.add_scalar('Train/lptime', lp_time)
                 self.writer.add_scalar('Train/penalty', penalty)
                 self.model.save(self.save_path)
                 self.last_reward = mean_reward
@@ -92,14 +88,12 @@ class TensorboardCallback(BaseCallback):
                     
                     self.log_data['Train/Rewards'] = [rewards]
                     self.log_data['Train/step'] = [self.episode_count]
-                    self.log_data['Train/lp_time'] = [lp_time]
                     self.log_data['Train/penalty'] = [penalty]
                 else:
 
                     self.log_data['Train/Global_Reward'].append(mean_reward)
                     self.log_data['Train/Rewards'].append(rewards)
                     self.log_data['Train/step'].append(self.episode_count)
-                    self.log_data['Train/lp_time'].append(lp_time)
                     self.log_data['Train/penalty'].append(penalty)
                 self.episode_count += 1
 
@@ -183,19 +177,13 @@ class RunTestCallback(BaseCallback):
             info = self.aggregate_info(info)
             sum_reward.append(rewards)
             sum_mlu.append(info['mlu'])
-            sum_mlu_opt.append(info['mlu_opt'])
-            lp_times.append(info['lp_time'])
             list_pen.append(info['penalty'])
         # breakpoint()
-        mean_lp_time = np.mean(np.array(lp_times).flatten())
         sum_reward = np.array(sum_reward).flatten().mean()
         sum_mlu = np.array(sum_mlu).flatten().mean()
-        sum_mlu_opt = np.array(sum_mlu_opt).flatten().mean()
         mean_pen = np.mean(np.array(list_pen).flatten())
         self.writer.add_scalar('Test/Global_Reward', sum_reward, self.episode_count)
         self.writer.add_scalar('Test/MLU', sum_mlu, self.episode_count)
-        self.writer.add_scalar('Test/mlu_opt', sum_mlu_opt, self.episode_count)
-        self.writer.add_scalar('Test/lp_time', mean_lp_time, self.episode_count)
         self.writer.add_scalar('Test/penalty', mean_pen, self.episode_count)
 
         self.log_rewards.append([sum_reward, sum_mlu, sum_mlu_opt])
@@ -204,17 +192,13 @@ class RunTestCallback(BaseCallback):
         if 'Test/Global_Reward' not in self.log_data.keys():
             self.log_data['Test/Global_Reward'] = [sum_reward]
             self.log_data['Test/MLU'] = [sum_mlu]
-            self.log_data['Test/sum_mlu_opt'] = [sum_mlu_opt]
             self.log_data['Test/step'] = [self.episode_count]
-            self.log_data['Test/lp_time'] = [mean_lp_time]
             self.log_data['Test/penalty'] = [mean_pen]
         else:
 
             self.log_data['Test/Global_Reward'].append(sum_reward)
             self.log_data['Test/MLU'].append(sum_mlu)
             self.log_data['Test/step'].append(self.episode_count)
-            self.log_data['Test/sum_mlu_opt'].append(sum_mlu_opt)
-            self.log_data['Test/lp_time'].append(mean_lp_time)
             self.log_data['Test/penalty'].append(mean_pen)
         self.episode_count += 1
 

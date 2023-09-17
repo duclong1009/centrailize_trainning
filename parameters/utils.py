@@ -1,4 +1,4 @@
-info_keywords = ("rewards", "mlu", "mlu_opt", "lp_time", "penalty")
+info_keywords = ("rewards", "mlu", "penalty")
 
 
 def get_experiment_name(args):

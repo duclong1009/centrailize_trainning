@@ -89,8 +89,7 @@ class TE_Env(BaseEnv):
     def step(self, action, use_solution=False):
         tm = self.tm[self.tm_index]
         self.routing_rule = self._convert_action(action)
-        import copy
-        mlu, link_mlu = do_routing(self.tm[self.tm_index - 1], self.routing_rule, self.nx_graph, self.flow2link, self.ub, self.link2idx, self.idx2flow)
+        mlu, link_mlu = do_routing(tm, self.routing_rule, self.nx_graph, self.flow2link, self.ub, self.link2idx, self.idx2flow)
         rewards  = self._reward(mlu)
         observation, dones = self._next_obs()
         self.penalty = 0
