@@ -6,16 +6,42 @@ import gymnasium
 from joblib import delayed, Parallel
 import pickle 
 import time
+import torch.nn as nn
+import torch
+def softmax(x, axis=None):
+    softmax_lay = nn.Softmax(dim=-1)
+    x = softmax_lay(torch.tensor(x)).numpy()
+    # exp_x = np.exp(x - np.max(x, axis=axis, keepdims=True))
+    return x
+
+
+def get_idx2link(graph):
+    idx2link = {}
+    link2idx = {}
+    for i, (u,v) in enumerate(graph.edges):
+        link2idx[(u,v)] = i
+        idx2link[i] = (u,v)
+    return idx2link, link2idx
 
 def get_idx2flow(args):
     num_node = args.num_node
+    num_path = args.n_path
     idx2flow = {}
-    k = 0
-    for i,j in itertools.product(range(num_node), range(num_node)):
-        if i != j:
-            idx2flow[k] = (i,j)
-            k += 1
+    count = 0
+    for i in range(num_node):
+        for j in range(num_node):
+            if i != j:
+                for k in range(num_path):
+                    idx2flow[count] = (i,j,k)
+                    count += 1
     return idx2flow
+
+def init_routing_rule(num_node, n_path):
+    routing_rule = np.zeros((num_node * (num_node-1), n_path))
+    routing_rule[:,0] = 1
+    return routing_rule.flatten()
+
+
 
 
 def set_obs_space(args):
@@ -25,9 +51,8 @@ def set_obs_space(args):
 def set_action_space(args):
     num_node = args.num_node  # total number of flows per agent
     num_path = args.n_path
-    num_flow = num_node * num_node
-    n_candidate = num_node * (num_node - 1)
-    action_space = gymnasium.spaces.MultiBinary(n_candidate)
+    num_flow = num_node * (num_node - 1)
+    action_space = gymnasium.spaces.Box(low=0.0, high=1.0, shape=(num_flow * num_path,))
     return action_space
 
 def load_network_topology(dataset, data_folder):
@@ -38,7 +63,6 @@ def load_network_topology(dataset, data_folder):
     capacity_mx = data['capacity_mx']
     cost_mx = data['cost_mx']
 
-    # print(adj.shape)
     num_node = adj.shape[0]
     # initialize graph
     G = nx.DiGraph()
@@ -112,49 +136,38 @@ def compute_path(graph, dataset, datapath, rank):
 
     return segments
 
-def do_routing(tm, routing_rule, nx_graph, num_node, flow2link, ub):
+def do_routing(tm, routing_rule, nx_graph, flow2link, ub, link2idx, idx2flow):
     """
-        routing rule: (node, node)
+        routing rule: (node, node,n_path)
     """
     # extract utilization
-    link_utils = []
 
+    
+    n_link = len(nx_graph.edges)
+    link_loads = np.zeros(n_link)
+    
     mlu = 0
-    for link_id, (u, v) in enumerate(nx_graph.edges):
-        traffic_load = 0
-        for i, j in itertools.product(range(num_node), range(num_node)):
-            if has_path(i, j, flow2link):
-                k = int(routing_rule[i, j])
-                if k >= ub[i, j]:
-                    raise RuntimeError(f' {i} {j} {k} {ub[i, j]}')
-                else:
-                    traffic_load += link_in_path(i, j, u, v, k, flow2link) * tm[i, j]
-
+    for key in idx2flow.keys():
+            i,j,k = idx2flow[key]
+            ratio = routing_rule[key]
+            k_bound = ub[i,j]
+            demand_on_path = tm[i,j] * ratio
+            if k < k_bound and i!=j:
+                for (u, v) in flow2link[(i, j)][k]:
+                    idx =link2idx[(u,v)]
+                    link_loads[idx] += demand_on_path
+    link_utils = []
+    for (u,v) in nx_graph.edges:
+        idx =link2idx[(u,v)] 
+        traffic_load = link_loads[idx]
         capacity = nx_graph.get_edge_data(u, v)['capacity']
         utilization = traffic_load / capacity
         link_utils.append(utilization)
         if utilization >= mlu:
             mlu = utilization
 
-    link_utils = np.asarray(link_utils)
-    return mlu, link_utils
-
-def get_path_mlu(routing_rule, num_node, flow2link, link_util, nx_graph):
-    path_mlu = np.zeros(shape=(num_node, num_node))
-
-    for i, j in itertools.product(range(num_node), range(num_node)):
-        if i == j:
-            path_mlu[i, j] = 0.0
-        else:
-            k = int(routing_rule[i, j])
-            path = flow2link[(i, j)][k]
-            p_mlu = 0.0
-            for link_id, (u, v) in enumerate(nx_graph.edges):
-                if (u, v) in path and link_util[link_id] > p_mlu:
-                    p_mlu = link_util[link_id]
-
-            path_mlu[i, j] = p_mlu
-    return path_mlu
+    link_loads = np.asarray(link_loads)
+    return mlu, link_loads
 
 def initialize_link2flow(args):
     """
